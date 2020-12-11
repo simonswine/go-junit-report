@@ -75,6 +75,10 @@ var (
 // results. An optional pkgName can be given, which is used in case a package
 // result line is missing.
 func Parse(r io.Reader, pkgName string) (*Report, error) {
+	return ParseChannel(r, pkgName, nil)
+}
+
+func ParseChannel(r io.Reader, pkgName string, testCh chan *Test) (*Report, error) {
 	reader := bufio.NewReader(r)
 
 	report := &Report{make([]Package, 0)}
@@ -208,6 +212,10 @@ func Parse(r io.Reader, pkgName string) (*Report, error) {
 			testsTime += test.Duration
 
 			test.Time = int(test.Duration / time.Millisecond) // deprecated
+
+			if testCh != nil {
+				testCh <- test
+			}
 		} else if matches := regexCoverage.FindStringSubmatch(line); len(matches) == 2 {
 			coveragePct = matches[1]
 		} else if matches := regexOutput.FindStringSubmatch(line); capturedPackage == "" && len(matches) == 3 {
